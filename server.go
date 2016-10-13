@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 )
 
@@ -16,15 +17,18 @@ type RespObj struct {
 
 func defaultHandler(w http.ResponseWriter, r *http.Request) {
 	var resp RespObj
+	body, _ := ioutil.ReadAll(r.Body)
 	switch r.Method {
 	case "GET":
 		resp = RespObj{RequestURI: r.RequestURI, Method: r.Method, Headers: r.Header, Host: r.Host}
 	case "POST":
-		r.ParseForm()
-		resp = RespObj{RequestURI: r.RequestURI, Method: r.Method, Headers: r.Header, Host: r.Host}
-		resp.Params = r.FormValue("params")
+		var f interface{}
+		_ = json.Unmarshal(body, &f)
+		m := f.(map[string]interface{})
+		resp = RespObj{RequestURI: r.RequestURI, Method: r.Method, Headers: r.Header, Host: r.Host, Params: m["params"].(string)}
 	default:
 	}
+	fmt.Println(resp)
 	sendResponse(resp, w)
 }
 
